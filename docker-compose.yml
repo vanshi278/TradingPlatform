@@ -67,6 +67,17 @@ services:
       - ./backend:/app
     command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: alphaforge-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"          # dashboard at http://localhost:3000
+    depends_on:
+      - backend
+
 volumes:
   pgdata:
   redisdata:

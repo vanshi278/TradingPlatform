@@ -2,7 +2,7 @@
 
 > A mini version of what a quant desk runs internally: **data in → research & signals in the middle → execution & risk out.** Built on Indian equities (NSE / Nifty), not crypto.
 
-**Status:** 🚧 Work in progress, built in vertical slices.
+**Status:** ✅ all seven build phases complete, built in vertical slices — each ships something demoable.
 - **✅ Phase 0 — Foundations:** repo skeleton, Dockerized TimescaleDB + Redis, runnable FastAPI with live health checks.
 - **✅ Phase 1 — Data Layer:** historical loader (NSE equities via yfinance), TimescaleDB read/write, Redis pub/sub bus, and 3 concurrent feeds normalized into one tick format. Live broker WebSocket scaffolded (activate with API keys).
 - **✅ Phase 2 — Event-Driven Backtester:** single-queue event loop with **proven lookahead-bias protection**, next-open fills (slippage + commission), portfolio accounting, buy & hold + MA-crossover strategies, and equity-curve metrics (Sharpe, CAGR, max drawdown).
@@ -13,6 +13,18 @@
 - **✅ Phase 7 — React Dashboard:** a live cockpit (React + Vite + Tailwind + lightweight-charts) — real-time candlestick + order-book depth ladder over a FastAPI **WebSocket**, plus a backtest-runner UI, equity curve, positions, and a live risk panel driven by the engine.
 
 ---
+
+## Results at a glance
+
+| Pillar | Headline result |
+|--------|-----------------|
+| **Event-driven backtester** | RELIANCE buy & hold +207% / Sharpe 0.81 (2018–24) — with a *proven* no-lookahead guarantee |
+| **ML signal** | out-of-sample mean **IC +0.047** (beat momentum −0.012), walk-forward + SHAP |
+| **Almgren-Chriss execution** | cut timing risk **~28%** (27.0 → 19.5 bps) vs TWAP at +2.4 bps cost |
+| **Risk engine** | 99% VaR three ways; **Kupiec backtest passes** (15 vs 12.3 expected, p=0.45) |
+| **Tests** | **70 passing** (`pytest`) — incl. the no-lookahead, matching-engine & VaR guarantees |
+
+📄 Full design notes & methodology: **[WRITEUP.md](WRITEUP.md)**
 
 ## What it is
 
@@ -109,17 +121,17 @@ cd alphaforge
 ```bash
 docker compose up -d
 ```
-This starts:
+This starts the whole stack:
+- **Dashboard** at **http://localhost:3000** ← the cockpit
+- **Backend API** on `localhost:8000` (Swagger UI at `/docs`)
 - **TimescaleDB** on `localhost:5432` (hypertables `ticks` and `bars` created automatically from [`db/init.sql`](db/init.sql))
 - **Redis** on `localhost:6379`
-- **Backend API** on `localhost:8000`
 
-Verify it's healthy:
+Verify the backend is healthy:
 ```bash
 curl http://localhost:8000/health
 # {"status":"ok","services":{"timescaledb":"up","redis":"up"}}
 ```
-Interactive API docs (Swagger UI): **http://localhost:8000/docs**
 
 > Just the data services, without the backend container:
 > `docker compose up -d timescaledb redis`
@@ -294,7 +306,7 @@ kill-switch status). See [frontend/README.md](frontend/README.md).
 - [x] **Phase 5 — Execution + LOB** · order book, matching engine, Poisson flow, impact model, Almgren-Chriss vs TWAP/VWAP, implementation shortfall, swapped into the backtester
 - [x] **Phase 6 — Risk Engine** · VaR/CVaR (3 methods), Kupiec backtest, position/sector/gross limits, drawdown kill switch
 - [x] **Phase 7 — React Dashboard** · live candlestick + depth ladder (WebSocket), P&L, backtest runner, risk panel
-- [ ] **Phase 8 — Polish** · results-led README, one-command spin-up, tests, write-up
+- [x] **Phase 8 — Polish** · results-led README, one-command `docker compose up` (incl. dashboard), tests, [WRITEUP.md](WRITEUP.md)
 
 ## Disclaimer
 
