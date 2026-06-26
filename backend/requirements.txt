@@ -19,10 +19,10 @@ scikit-learn
 cvxpy
 matplotlib        # equity-curve / drawdown plots (backtest results)
 
-# ---- ML / forecasting (added in Phase 4) ----
-# lightgbm
-# torch
-# shap
+# ---- ML / forecasting (Phase 4) ----
+lightgbm          # gradient-boosted trees (falls back to sklearn if libomp missing)
+shap              # model interpretability (falls back to feature_importances_)
+# torch           # optional LSTM/GRU sequence model
 # alphalens-reloaded
 
 # ---- Dev / test ----
