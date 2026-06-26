@@ -8,6 +8,7 @@
 - **✅ Phase 2 — Event-Driven Backtester:** single-queue event loop with **proven lookahead-bias protection**, next-open fills (slippage + commission), portfolio accounting, buy & hold + MA-crossover strategies, and equity-curve metrics (Sharpe, CAGR, max drawdown).
 - **✅ Phase 3 — Alpha / Strategy module:** short-selling + target-weight rebalancing, pairs trading on cointegrated spreads (Engle-Granger), cross-sectional long/short momentum, an inventory-managed market-making sim, and a strategy comparison report.
 - **✅ Phase 4 — ML / Forecasting:** causal feature engineering, a forward-return **rank** target, **walk-forward** cross-validation, LightGBM (sklearn fallback) vs a momentum baseline, an honest **Information Coefficient** report (mean IC ≈ +0.047 out-of-sample), SHAP attribution, and the ML score backtested as a dollar-neutral long/short.
+- **✅ Phase 5 — Execution + LOB simulator:** a limit-order-book with price-time priority and O(1) cancels, a matching engine, Poisson order flow, a Kyle-λ impact model, **Almgren-Chriss** vs TWAP/VWAP with an implementation-shortfall comparison (AC cut timing risk ~28% at +2.4 bps cost), swapped into the backtester as size-dependent impact fills.
 
 ---
 
@@ -225,6 +226,28 @@ no future leakage), walk-forward folds that never train on a test month, and
 SHAP attribution so the model isn't a black box. See
 [backend/ml/README.md](backend/ml/README.md).
 
+## Execution: implementation shortfall (Phase 5)
+
+```bash
+cd backend && python -m execution.run_execution
+```
+
+Buying 50,000 shares over 20 slices against the simulated LOB (200 Monte-Carlo
+paths), comparing execution schedules by mean cost and timing risk:
+
+| Schedule | Mean IS (bps) | Std IS / risk (bps) |
+|----------|--------------:|--------------------:|
+| TWAP | 6.9 | 27.0 |
+| VWAP (U-shape) | 7.0 | 26.2 |
+| AC (low λ) | 6.9 | 26.7 |
+| **AC (high λ)** | 9.3 | **19.5** |
+
+**Almgren-Chriss (high λ) cut timing risk ~28% (27.0 → 19.5 bps) for +2.4 bps of
+mean impact** — the cost-vs-risk trade-off, front-loading to spend less time
+exposed to price drift. The same LOB-derived impact model is swapped into the
+backtester via `run_backtest --execution impact`. See
+[backend/execution/README.md](backend/execution/README.md).
+
 ## Build roadmap (progress)
 
 - [x] **Phase 0 — Setup & Foundations** · repo skeleton, env, Docker (TimescaleDB + Redis), runnable FastAPI health check
@@ -232,7 +255,7 @@ SHAP attribution so the model isn't a black box. See
 - [x] **Phase 2 — Event-Driven Backtester** · single-queue loop, no-lookahead replay handler, next-open fills, portfolio, buy&hold + MA strategies, equity-curve metrics
 - [x] **Phase 3 — Alpha / Strategy** · pairs/cointegration, cross-sectional momentum, market making, short-selling, comparison report
 - [x] **Phase 4 — ML / Forecasting** · causal features, rank target, walk-forward CV, LightGBM/sklearn vs momentum, IC report, SHAP, ML long/short
-- [ ] **Phase 5 — Execution + LOB** · order book, matching engine, Almgren-Chriss, TWAP/VWAP, implementation shortfall
+- [x] **Phase 5 — Execution + LOB** · order book, matching engine, Poisson flow, impact model, Almgren-Chriss vs TWAP/VWAP, implementation shortfall, swapped into the backtester
 - [ ] **Phase 6 — Risk Engine** · VaR/CVaR, Kupiec test, limits, drawdown kill switch
 - [ ] **Phase 7 — React Dashboard** · live charts, depth ladder, P&L, backtest runner, risk panel
 - [ ] **Phase 8 — Polish** · results-led README, one-command spin-up, tests, write-up

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from backtest.data import DataHandler
 from backtest.engine import Backtest
-from backtest.execution import SimulatedExecutionHandler
+from backtest.execution import ImpactExecutionHandler, SimulatedExecutionHandler
 from backtest.performance import compute_metrics, format_metrics
 from backtest.portfolio import Portfolio
 from strategies import BuyAndHold, CrossSectionalMomentum, MACrossover, PairsTradingStrategy
@@ -109,6 +109,8 @@ def main() -> None:
     p.add_argument("--end", default="2024-01-01")
     p.add_argument("--interval", default="1d")
     p.add_argument("--source", default="yfinance", choices=["yfinance", "db"])
+    p.add_argument("--execution", default="fixed", choices=["fixed", "impact"],
+                   help="fixed slippage, or size-dependent square-root impact (Phase 5)")
     p.add_argument("--capital", type=float, default=100_000.0)
     p.add_argument("--periods", type=int, default=252, help="periods/year for annualization")
     args = p.parse_args()
@@ -123,7 +125,10 @@ def main() -> None:
     data = DataHandler(bars, symbols)
     strategy = _build_strategy(args, data, symbols)
     portfolio = Portfolio(data, symbols, initial_capital=args.capital)
-    execution = SimulatedExecutionHandler(data)
+    execution = (
+        ImpactExecutionHandler(data) if args.execution == "impact"
+        else SimulatedExecutionHandler(data)
+    )
 
     portfolio = Backtest(data, strategy, portfolio, execution).run()
     equity_df = portfolio.equity_curve()

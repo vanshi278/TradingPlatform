@@ -7,6 +7,8 @@ arrives, at t+1's open. Phase 5 replaces this with the limit-order-book sim.
 """
 from __future__ import annotations
 
+import math
+
 from backtest.data import DataHandler
 from backtest.events import FillEvent, OrderEvent
 
@@ -41,6 +43,51 @@ class SimulatedExecutionHandler:
             if open_px is None:
                 continue  # no bar to fill against; drop
             # slippage always works against the trader
+            price = open_px * (1 + slip) if order.direction == "BUY" else open_px * (1 - slip)
+            commission = max(self.min_commission, self.commission_bps / 1e4 * price * order.quantity)
+            fills.append(
+                FillEvent(
+                    symbol=order.symbol,
+                    time=self.data.current_time,
+                    quantity=order.quantity,
+                    direction=order.direction,
+                    fill_price=price,
+                    commission=commission,
+                )
+            )
+        self._pending = []
+        return fills
+
+
+class ImpactExecutionHandler(SimulatedExecutionHandler):
+    """Next-open fills with SIZE-DEPENDENT slippage, informed by the Phase 5 LOB
+    study (this is the 5.9 'swap in realistic execution' step).
+
+    A daily bar can't host a live order book, so rather than replay a book per
+    bar we charge the market impact a parent order of this size would incur via a
+    square-root law: impact_bps = impact_coef * sqrt(qty / bar_volume), on top of
+    the fixed half-spread and commission. Bigger orders (more of the day's volume)
+    cost progressively more — the same convexity the LOB walk produces.
+    """
+
+    def __init__(self, data, base_slippage_bps=1.0, impact_coef=100.0,
+                 commission_bps=1.0, min_commission=0.0):
+        super().__init__(data, slippage_bps=base_slippage_bps,
+                         commission_bps=commission_bps, min_commission=min_commission)
+        self.impact_coef = impact_coef
+
+    def fill_pending(self):
+        if not self._pending:
+            return []
+        fills = []
+        for order in self._pending:
+            open_px = self.data.get_latest_bar_value(order.symbol, "open")
+            if open_px is None:
+                continue
+            volume = self.data.get_latest_bar_value(order.symbol, "volume") or 0.0
+            participation = order.quantity / volume if volume > 0 else 0.0
+            impact_bps = self.impact_coef * math.sqrt(participation)
+            slip = (self.slippage_bps + impact_bps) / 1e4
             price = open_px * (1 + slip) if order.direction == "BUY" else open_px * (1 - slip)
             commission = max(self.min_commission, self.commission_bps / 1e4 * price * order.quantity)
             fills.append(
