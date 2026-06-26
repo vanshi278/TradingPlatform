@@ -17,6 +17,7 @@ scipy
 statsmodels
 scikit-learn
 cvxpy
+matplotlib        # equity-curve / drawdown plots (backtest results)
 
 # ---- ML / forecasting (added in Phase 4) ----
 # lightgbm

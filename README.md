@@ -5,6 +5,7 @@
 **Status:** 🚧 Work in progress, built in vertical slices.
 - **✅ Phase 0 — Foundations:** repo skeleton, Dockerized TimescaleDB + Redis, runnable FastAPI with live health checks.
 - **✅ Phase 1 — Data Layer:** historical loader (NSE equities via yfinance), TimescaleDB read/write, Redis pub/sub bus, and 3 concurrent feeds normalized into one tick format. Live broker WebSocket scaffolded (activate with API keys).
+- **✅ Phase 2 — Event-Driven Backtester:** single-queue event loop with **proven lookahead-bias protection**, next-open fills (slippage + commission), portfolio accounting, buy & hold + MA-crossover strategies, and equity-curve metrics (Sharpe, CAGR, max drawdown).
 
 ---
 
@@ -156,11 +157,33 @@ See [backend/data/README.md](backend/data/README.md) for the full data-layer map
 A real Zerodha Kite WebSocket feed plugs into the same interface once you add
 `KITE_API_KEY` / `KITE_ACCESS_TOKEN` to `.env`.
 
+## Backtesting (Phase 2)
+
+```bash
+cd backend
+python -m backtest.run_backtest --symbols RELIANCE --strategy buyhold --start 2018-01-01 --end 2024-01-01
+python -m backtest.run_backtest --symbols RELIANCE --strategy ma --short 20 --long 50 --start 2018-01-01 --end 2024-01-01
+```
+
+Sample run on RELIANCE (2018–2024, daily, next-open fills, 1 bps slippage + commission):
+
+| Strategy | Total return | CAGR | Sharpe | Max drawdown | Trades |
+|----------|-------------:|-----:|-------:|-------------:|-------:|
+| Buy & hold | 207.5% | 21.1% | 0.81 | −43.8% | 1 |
+| MA 20/50 crossover | 53.8% | 7.6% | 0.49 | −42.0% | 39 |
+
+The crossover *underperforming* buy & hold through a strong bull market is the
+honest, expected result — trend filters cost you in trending-up regimes. The
+point of the engine is to measure that truthfully (no lookahead, realistic
+fills), not to manufacture a flattering number. See
+[backend/backtest/README.md](backend/backtest/README.md) for how lookahead bias
+is structurally prevented.
+
 ## Build roadmap (progress)
 
 - [x] **Phase 0 — Setup & Foundations** · repo skeleton, env, Docker (TimescaleDB + Redis), runnable FastAPI health check
 - [x] **Phase 1 — Data Layer** · historical loader (yfinance/NSE), TimescaleDB I/O, Redis pub/sub bus, 3 concurrent normalized feeds · *live broker WebSocket scaffolded, pending API keys*
-- [ ] **Phase 2 — Event-Driven Backtester** · event loop, replay handler, portfolio, momentum strategy, equity curve
+- [x] **Phase 2 — Event-Driven Backtester** · single-queue loop, no-lookahead replay handler, next-open fills, portfolio, buy&hold + MA strategies, equity-curve metrics
 - [ ] **Phase 3 — Alpha / Strategy** · base class, mean reversion, cross-sectional momentum, market making, comparison
 - [ ] **Phase 4 — ML / Forecasting** · features, rank target, walk-forward CV, LightGBM, IC report, SHAP
 - [ ] **Phase 5 — Execution + LOB** · order book, matching engine, Almgren-Chriss, TWAP/VWAP, implementation shortfall

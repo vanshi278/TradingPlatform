@@ -43,6 +43,7 @@ data/processed/
 *.db
 models/*.pkl
 models/*.joblib
+results/
 *.log
 
 # ---------- Docker / local volumes ----------
