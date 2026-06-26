@@ -27,3 +27,4 @@ shap              # model interpretability (falls back to feature_importances_)
 
 # ---- Dev / test ----
 pytest
+httpx             # FastAPI TestClient (API endpoint tests)

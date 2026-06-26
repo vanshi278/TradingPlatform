@@ -10,6 +10,7 @@
 - **✅ Phase 4 — ML / Forecasting:** causal feature engineering, a forward-return **rank** target, **walk-forward** cross-validation, LightGBM (sklearn fallback) vs a momentum baseline, an honest **Information Coefficient** report (mean IC ≈ +0.047 out-of-sample), SHAP attribution, and the ML score backtested as a dollar-neutral long/short.
 - **✅ Phase 5 — Execution + LOB simulator:** a limit-order-book with price-time priority and O(1) cancels, a matching engine, Poisson order flow, a Kyle-λ impact model, **Almgren-Chriss** vs TWAP/VWAP with an implementation-shortfall comparison (AC cut timing risk ~28% at +2.4 bps cost), swapped into the backtester as size-dependent impact fills.
 - **✅ Phase 6 — Risk Engine:** 99% 1-day **VaR/CVaR** three ways (historical, parametric, Monte-Carlo), a **Kupiec** exception backtest (model not rejected), pre-trade position/sector/gross **limit checks** (resize or block), and a drawdown **kill switch** that flattens the book.
+- **✅ Phase 7 — React Dashboard:** a live cockpit (React + Vite + Tailwind + lightweight-charts) — real-time candlestick + order-book depth ladder over a FastAPI **WebSocket**, plus a backtest-runner UI, equity curve, positions, and a live risk panel driven by the engine.
 
 ---
 
@@ -269,6 +270,20 @@ breaches vs 12.3 expected, p = 0.45), pre-trade **limits** resize a 290%-of-equi
 order down to the 20% cap, and the **kill switch** trips at −20.4% drawdown and
 flattens the book. See [backend/risk/README.md](backend/risk/README.md).
 
+## Dashboard (Phase 7)
+
+```bash
+cd backend && uvicorn api.main:app --port 8000     # WebSocket + REST
+cd frontend && npm install && npm run dev          # http://localhost:5173
+```
+
+A React + Tailwind cockpit on TradingView's `lightweight-charts`: a live
+candlestick chart and order-book depth ladder streamed over a FastAPI WebSocket
+(`/ws/market`, off the synthetic feed — no keys, no market hours), plus a
+backtest-runner form that drives the real engine (`POST /api/backtest/run`) and
+fills the equity curve, positions table, and a live risk panel (VaR, drawdown,
+kill-switch status). See [frontend/README.md](frontend/README.md).
+
 ## Build roadmap (progress)
 
 - [x] **Phase 0 — Setup & Foundations** · repo skeleton, env, Docker (TimescaleDB + Redis), runnable FastAPI health check
@@ -278,7 +293,7 @@ flattens the book. See [backend/risk/README.md](backend/risk/README.md).
 - [x] **Phase 4 — ML / Forecasting** · causal features, rank target, walk-forward CV, LightGBM/sklearn vs momentum, IC report, SHAP, ML long/short
 - [x] **Phase 5 — Execution + LOB** · order book, matching engine, Poisson flow, impact model, Almgren-Chriss vs TWAP/VWAP, implementation shortfall, swapped into the backtester
 - [x] **Phase 6 — Risk Engine** · VaR/CVaR (3 methods), Kupiec backtest, position/sector/gross limits, drawdown kill switch
-- [ ] **Phase 7 — React Dashboard** · live charts, depth ladder, P&L, backtest runner, risk panel
+- [x] **Phase 7 — React Dashboard** · live candlestick + depth ladder (WebSocket), P&L, backtest runner, risk panel
 - [ ] **Phase 8 — Polish** · results-led README, one-command spin-up, tests, write-up
 
 ## Disclaimer

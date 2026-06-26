@@ -10,10 +10,12 @@ import logging
 
 import psycopg2
 import redis
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
+from api.routes import router
+from api.streaming import market_messages
 from data.storage import query_bars
 
 logging.basicConfig(level=settings.log_level)
@@ -32,6 +34,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(router)
 
 
 def _check_postgres() -> bool:
@@ -94,3 +98,16 @@ def get_bars(
         df["time"] = df["time"].astype(str)
         records = df.to_dict("records")
     return {"symbol": symbol.upper(), "interval": interval, "count": len(records), "bars": records}
+
+
+@app.websocket("/ws/market")
+async def ws_market(ws: WebSocket) -> None:
+    """Stream live price + order-book depth snapshots to the dashboard."""
+    await ws.accept()
+    try:
+        async for msg in market_messages():
+            await ws.send_json(msg)
+    except WebSocketDisconnect:
+        return
+    except Exception:  # noqa: BLE001 - client gone / send failed
+        return
