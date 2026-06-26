@@ -10,6 +10,7 @@ numpy
 psycopg2-binary
 redis
 sortedcontainers
+yfinance          # historical OHLCV (no API key); Phase 1 source
 
 # ---- Quant / scientific ----
 scipy

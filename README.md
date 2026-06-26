@@ -2,7 +2,9 @@
 
 > A mini version of what a quant desk runs internally: **data in → research & signals in the middle → execution & risk out.** Built on Indian equities (NSE / Nifty), not crypto.
 
-**Status:** 🚧 Work in progress, built in vertical slices. **✅ Phase 0 — Setup & Foundations is complete:** the repo skeleton, Dockerized TimescaleDB + Redis, and a runnable FastAPI backend with live health checks.
+**Status:** 🚧 Work in progress, built in vertical slices.
+- **✅ Phase 0 — Foundations:** repo skeleton, Dockerized TimescaleDB + Redis, runnable FastAPI with live health checks.
+- **✅ Phase 1 — Data Layer:** historical loader (NSE equities via yfinance), TimescaleDB read/write, Redis pub/sub bus, and 3 concurrent feeds normalized into one tick format. Live broker WebSocket scaffolded (activate with API keys).
 
 ---
 
@@ -68,7 +70,7 @@ honest out-of-sample evaluation, and realistic execution cost.
 AI_TRADING_PLATFORM/
 ├── backend/
 │   ├── api/            # FastAPI app (REST + WebSocket)  ← runnable now
-│   ├── data/           # ingestion + storage            (Phase 1)
+│   ├── data/           # ingestion + storage            ← built (Phase 1)
 │   ├── backtest/       # event-driven engine            (Phase 2)
 │   ├── strategies/     # pluggable alpha                (Phase 3)
 │   ├── ml/             # forecasting models             (Phase 4)
@@ -127,10 +129,37 @@ pip install -r backend/requirements.txt
 cd backend && uvicorn api.main:app --reload
 ```
 
+## Data layer (Phase 1)
+
+```bash
+# Historical OHLCV — real NSE data, no keys, no Docker:
+cd backend && python -m data.history --symbol RELIANCE --start 2022-01-01 --end 2024-01-01
+
+# Concurrent multi-source live feed, zero infrastructure (3 normalized feeds):
+cd backend && python -m data.run_feeds --no-redis --seconds 8
+
+# Full pipeline (Docker up): publishers → Redis → two independent subscribers
+# (a console printer and a TimescaleDB writer):
+docker compose up -d timescaledb redis
+cd backend && python -m data.run_feeds --seconds 15
+
+# Query stored bars through the API:
+curl "http://localhost:8000/data/bars?symbol=RELIANCE&interval=1d&limit=5"
+```
+
+Run the tests (DB tests auto-skip if TimescaleDB isn't up):
+```bash
+cd backend && pytest
+```
+
+See [backend/data/README.md](backend/data/README.md) for the full data-layer map.
+A real Zerodha Kite WebSocket feed plugs into the same interface once you add
+`KITE_API_KEY` / `KITE_ACCESS_TOKEN` to `.env`.
+
 ## Build roadmap (progress)
 
 - [x] **Phase 0 — Setup & Foundations** · repo skeleton, env, Docker (TimescaleDB + Redis), runnable FastAPI health check
-- [ ] **Phase 1 — Data Layer** · historical loader, TimescaleDB I/O, live WebSocket feed, Redis pub/sub, 3 concurrent sources
+- [x] **Phase 1 — Data Layer** · historical loader (yfinance/NSE), TimescaleDB I/O, Redis pub/sub bus, 3 concurrent normalized feeds · *live broker WebSocket scaffolded, pending API keys*
 - [ ] **Phase 2 — Event-Driven Backtester** · event loop, replay handler, portfolio, momentum strategy, equity curve
 - [ ] **Phase 3 — Alpha / Strategy** · base class, mean reversion, cross-sectional momentum, market making, comparison
 - [ ] **Phase 4 — ML / Forecasting** · features, rank target, walk-forward CV, LightGBM, IC report, SHAP
