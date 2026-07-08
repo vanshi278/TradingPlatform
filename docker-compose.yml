@@ -15,7 +15,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alphaforge}
       POSTGRES_DB: ${POSTGRES_DB:-alphaforge}
     ports:
-      - "5432:5432"
+      # Host port 5433: many Macs run a native Postgres on 5432; the backend
+      # container still talks to timescaledb:5432 on the docker network.
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -55,6 +57,14 @@ services:
       REDIS_URL: redis://redis:6379/0
       APP_ENV: ${APP_ENV:-dev}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      TRADING_MODE: ${TRADING_MODE:-paper}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      SMARTAPI_KEY: ${SMARTAPI_KEY:-}
+      SMARTAPI_CLIENT_CODE: ${SMARTAPI_CLIENT_CODE:-}
+      SMARTAPI_PIN: ${SMARTAPI_PIN:-}
+      SMARTAPI_TOTP_SECRET: ${SMARTAPI_TOTP_SECRET:-}
     ports:
       - "8000:8000"
     depends_on:

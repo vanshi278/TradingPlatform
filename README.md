@@ -11,6 +11,7 @@
 - **✅ Phase 5 — Execution + LOB simulator:** a limit-order-book with price-time priority and O(1) cancels, a matching engine, Poisson order flow, a Kyle-λ impact model, **Almgren-Chriss** vs TWAP/VWAP with an implementation-shortfall comparison (AC cut timing risk ~28% at +2.4 bps cost), swapped into the backtester as size-dependent impact fills.
 - **✅ Phase 6 — Risk Engine:** 99% 1-day **VaR/CVaR** three ways (historical, parametric, Monte-Carlo), a **Kupiec** exception backtest (model not rejected), pre-trade position/sector/gross **limit checks** (resize or block), and a drawdown **kill switch** that flattens the book.
 - **✅ Phase 7 — React Dashboard:** a live cockpit (React + Vite + Tailwind + lightweight-charts) — real-time candlestick + order-book depth ladder over a FastAPI **WebSocket**, plus a backtest-runner UI, equity curve, positions, and a live risk panel driven by the engine.
+- **✅ Phase 9 — Live trading platform:** **signup/login auth** (bcrypt + JWT), a real **order-management system** (market/limit orders, resting-limit fills, cancels, positions & P&L derived from fills, every order gated by the Phase-6 risk limits), an **AI analyst & auto-trader** (Gemini LLM with a rule-based fallback; every decision logged with its rationale), and an **Angel One SmartAPI adapter** for real broker orders (env-gated; paper mode is the default).
 
 ---
 
@@ -296,6 +297,36 @@ backtest-runner form that drives the real engine (`POST /api/backtest/run`) and
 fills the equity curve, positions table, and a live risk panel (VaR, drawdown,
 kill-switch status). See [frontend/README.md](frontend/README.md).
 
+## Live trading platform (Phase 9)
+
+Sign up, get a paper account with **₹10,00,000 simulated cash**, and trade the
+live (simulated) NSE feed — or flip one env var to route orders to a real broker.
+
+```
+signup/login (JWT) ──► dashboard ──► order ticket ──► risk gate ──► broker
+                                        ▲                            │
+                             AI analyst & auto-trader          paper │ live
+                             (Gemini or rule-based,        simulator │ Angel One
+                              every decision logged)                 ▼
+                                                          orders + fills + P&L
+```
+
+- **Auth** — bcrypt-hashed passwords, JWT sessions, every trading/AI endpoint protected.
+- **Orders** — market & limit (resting limits fill when price crosses), cancel,
+  per-user positions/cash/P&L derived from fills. **Every order passes the
+  Phase-6 risk limits** (per-name 25%, sector 40%, gross 2× — resized or blocked).
+- **AI** — on-demand analysis of any symbol (action/confidence/rationale/risks,
+  aware of your current position) and an **auto-trader** that trades signals
+  through the same risk gate and writes every decision + rationale to an audit
+  log. Uses **Gemini** when `GEMINI_API_KEY` is set (free key from
+  [aistudio.google.com](https://aistudio.google.com)); otherwise a transparent
+  rule-based analyst. The auto-trader is **paper-only by design** — in live mode
+  the AI recommends and a human confirms.
+- **Live broker** — set `TRADING_MODE=live` + the `SMARTAPI_*` vars (Angel One
+  SmartAPI: free API, normal brokerage per order, TOTP login, registered static
+  IP required by their Apr-2026 rule) and the same order flow routes to your
+  real Angel One account.
+
 ## Build roadmap (progress)
 
 - [x] **Phase 0 — Setup & Foundations** · repo skeleton, env, Docker (TimescaleDB + Redis), runnable FastAPI health check
@@ -307,6 +338,7 @@ kill-switch status). See [frontend/README.md](frontend/README.md).
 - [x] **Phase 6 — Risk Engine** · VaR/CVaR (3 methods), Kupiec backtest, position/sector/gross limits, drawdown kill switch
 - [x] **Phase 7 — React Dashboard** · live candlestick + depth ladder (WebSocket), P&L, backtest runner, risk panel
 - [x] **Phase 8 — Polish** · results-led README, one-command `docker compose up` (incl. dashboard), tests, [WRITEUP.md](WRITEUP.md)
+- [x] **Phase 9 — Live trading platform** · auth (signup/login), order management (market/limit/cancel, positions & P&L), risk-gated placement, AI analyst + auto-trader with decision audit log, Angel One live-broker adapter
 
 ## Disclaimer
 

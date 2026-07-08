@@ -3,6 +3,12 @@ fastapi
 uvicorn[standard]
 websockets
 python-dotenv
+email-validator   # pydantic EmailStr (auth)
+
+# ---- Auth / trading (Phase 9) ----
+bcrypt            # password hashing
+pyjwt             # JWT tokens
+# smartapi-python pyotp logzero   # optional: Angel One live-broker adapter
 
 # ---- Data / storage ----
 pandas
