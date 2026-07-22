@@ -1,5 +1,8 @@
 # AlphaForge — Systematic Trading & Research Platform
 
+[![CI](https://github.com/vanshi278/TradingPlatform/actions/workflows/ci.yml/badge.svg)](https://github.com/vanshi278/TradingPlatform/actions/workflows/ci.yml)
+&nbsp;[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 > A mini version of what a quant desk runs internally: **data in → research & signals in the middle → execution & risk out.** Built on Indian equities (NSE / Nifty), not crypto.
 
 **Status:** ✅ all seven build phases complete, built in vertical slices — each ships something demoable.
