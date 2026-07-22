@@ -42,7 +42,7 @@ class Settings:
 
     # AI (Phase 9): Gemini API key for LLM analysis; blank -> rule-based fallback.
     gemini_api_key: str = _env("GEMINI_API_KEY", "")
-    gemini_model: str = _env("GEMINI_MODEL", "gemini-2.0-flash")
+    gemini_model: str = _env("GEMINI_MODEL", "gemini-2.5-flash")
 
     @property
     def pg_dsn(self) -> str:

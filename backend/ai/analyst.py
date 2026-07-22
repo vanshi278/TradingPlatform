@@ -120,7 +120,14 @@ def gemini_analysis(feat: dict, portfolio_note: str = "") -> Optional[dict]:
         body = {
             "contents": [{"parts": [{"text": PROMPT.format(
                 snapshot=json.dumps(feat), portfolio=portfolio_note or "flat")}]}],
-            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 300},
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 512,
+                # gemini-2.5-* are "thinking" models — disable thinking so the
+                # token budget produces the (short JSON) answer, not reasoning
+                # tokens that would otherwise truncate the response.
+                "thinkingConfig": {"thinkingBudget": 0},
+            },
         }
         r = requests.post(url, params={"key": settings.gemini_api_key},
                           json=body, timeout=12)
