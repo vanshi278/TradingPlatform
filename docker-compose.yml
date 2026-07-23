@@ -60,7 +60,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       TRADING_MODE: ${TRADING_MODE:-paper}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       SMARTAPI_KEY: ${SMARTAPI_KEY:-}
       SMARTAPI_CLIENT_CODE: ${SMARTAPI_CLIENT_CODE:-}
       SMARTAPI_PIN: ${SMARTAPI_PIN:-}
@@ -75,6 +75,7 @@ services:
     # Source-mounted for live reload while developing.
     volumes:
       - ./backend:/app
+      - ./db:/db:ro          # so init_schema() finds db/init.sql at container boot
     command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   frontend:
