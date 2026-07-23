@@ -2,7 +2,15 @@
 -- Runs automatically on first container start via /docker-entrypoint-initdb.d.
 -- This is the foundation the Phase 1 data layer writes to and reads from.
 
-CREATE EXTENSION IF NOT EXISTS timescaledb;
+-- TimescaleDB is used for the hypertables when available (local Docker image).
+-- On a plain managed Postgres (Render/Railway/Neon) the extension isn't present,
+-- so we degrade gracefully to ordinary tables — the app works either way.
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS timescaledb;
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'TimescaleDB unavailable — using plain Postgres tables';
+END $$;
 
 -- ---------------------------------------------------------------------------
 -- Raw trade / quote ticks (the live feed lands here).
@@ -14,7 +22,12 @@ CREATE TABLE IF NOT EXISTS ticks (
     size   DOUBLE PRECISION,
     side   TEXT
 );
-SELECT create_hypertable('ticks', 'time', if_not_exists => TRUE);
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'create_hypertable') THEN
+        PERFORM create_hypertable('ticks', 'time', if_not_exists => TRUE);
+    END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_ticks_symbol_time ON ticks (symbol, time DESC);
 
 -- ---------------------------------------------------------------------------
@@ -91,5 +104,10 @@ CREATE TABLE IF NOT EXISTS bars (
     volume   DOUBLE PRECISION,
     PRIMARY KEY (symbol, interval, time)
 );
-SELECT create_hypertable('bars', 'time', if_not_exists => TRUE);
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'create_hypertable') THEN
+        PERFORM create_hypertable('bars', 'time', if_not_exists => TRUE);
+    END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_bars_symbol_interval_time ON bars (symbol, interval, time DESC);

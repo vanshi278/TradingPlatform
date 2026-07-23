@@ -9,11 +9,13 @@ import asyncio
 import contextlib
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import psycopg2
 import redis
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from api.config import settings
 from api.market_sim import SIM
@@ -45,6 +47,16 @@ async def _ticker() -> None:
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # Ensure the schema exists (idempotent) — lets a fresh managed Postgres
+    # bootstrap itself on first deploy. Non-fatal if the DB isn't reachable.
+    try:
+        from data.storage import init_schema
+
+        init_schema()
+        logger.info("database schema ready")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("skipped schema init (db not ready?): %s", exc)
+
     task = asyncio.create_task(_ticker())
     try:
         yield
@@ -94,17 +106,6 @@ def _check_redis() -> bool:
     except Exception as exc:  # noqa: BLE001 - health check should never raise
         logger.warning("Redis health check failed: %s", exc)
         return False
-
-
-@app.get("/")
-def root() -> dict:
-    return {
-        "name": "AlphaForge",
-        "tagline": "Systematic Trading & Research Platform",
-        "version": app.version,
-        "docs": "/docs",
-        "health": "/health",
-    }
 
 
 @app.get("/health")
@@ -170,3 +171,12 @@ async def ws_market(ws: WebSocket, symbol: str = "RELIANCE") -> None:
 def market_symbols() -> dict:
     """Tradable universe + latest prices (shared simulator)."""
     return {"symbols": SIM.symbols(), "prices": SIM.prices()}
+
+
+# Serve the built React dashboard at "/" (single-origin deploy). Mounted LAST so
+# /health, /api/*, /ws/*, /docs are matched first. Only active when the frontend
+# has been built into ./static (the production Docker image does this); in local
+# dev the Vite dev server / nginx handles the UI, so this stays inert.
+_STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+if _STATIC_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(_STATIC_DIR), html=True), name="frontend")

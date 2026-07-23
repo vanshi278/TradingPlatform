@@ -16,8 +16,18 @@ from psycopg2.extras import execute_values
 from api.config import settings
 from data.models import Tick
 
-# repo root -> db/init.sql
-_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "db" / "init.sql"
+def _default_schema_path() -> Path:
+    """Locate db/init.sql across layouts: the repo (backend/data/ -> repo/db) and
+    the deploy image (/app/data/ -> /app/db)."""
+    here = Path(__file__).resolve()
+    for candidate in (
+        here.parents[2] / "db" / "init.sql",   # repo checkout
+        here.parents[1] / "db" / "init.sql",   # image: backend copied to /app, db to /app/db
+        Path("/app/db/init.sql"),
+    ):
+        if candidate.exists():
+            return candidate
+    return here.parents[2] / "db" / "init.sql"
 
 # Fail fast instead of blocking on an unreachable DB.
 CONNECT_TIMEOUT = 5
@@ -49,7 +59,7 @@ def get_conn():
 
 def init_schema(sql_path: Path | str | None = None) -> None:
     """Run db/init.sql (idempotent). Handy for tests / non-Docker setups."""
-    path = Path(sql_path) if sql_path else _SCHEMA_PATH
+    path = Path(sql_path) if sql_path else _default_schema_path()
     sql = path.read_text()
     with get_conn() as conn, conn.cursor() as cur:
         cur.execute(sql)

@@ -23,6 +23,9 @@ class Settings:
     log_level: str = _env("LOG_LEVEL", "INFO")
 
     # Postgres / TimescaleDB
+    # Managed hosts (Render/Railway/Neon…) provide a single DATABASE_URL; if set,
+    # it wins over the discrete POSTGRES_* vars.
+    database_url: str = _env("DATABASE_URL", "")
     pg_host: str = _env("POSTGRES_HOST", "localhost")
     pg_port: int = int(_env("POSTGRES_PORT", "5432"))
     pg_user: str = _env("POSTGRES_USER", "alphaforge")
@@ -46,6 +49,9 @@ class Settings:
 
     @property
     def pg_dsn(self) -> str:
+        if self.database_url:
+            # psycopg2 accepts a libpq URI directly (postgres:// or postgresql://)
+            return self.database_url
         return (
             f"host={self.pg_host} port={self.pg_port} "
             f"dbname={self.pg_db} user={self.pg_user} password={self.pg_password}"

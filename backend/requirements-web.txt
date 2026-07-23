@@ -1,0 +1,21 @@
+# Runtime dependencies for the deployed web service (api.main) only.
+# The heavy ML/research libs (torch, lightgbm, shap, matplotlib, cvxpy) live in
+# requirements.txt and are needed only by the offline pipelines (run_ml,
+# run_execution) — NOT by the running API — so the deploy image stays lean.
+fastapi
+uvicorn[standard]
+websockets
+python-dotenv
+email-validator
+requests
+pandas
+numpy
+scipy
+statsmodels
+scikit-learn
+psycopg2-binary
+redis
+sortedcontainers
+yfinance
+bcrypt
+pyjwt

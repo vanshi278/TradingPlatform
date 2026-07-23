@@ -1,0 +1,33 @@
+# Render Blueprint — deploy AlphaForge as one web service + a managed Postgres.
+#
+#   render.com  ->  New  ->  Blueprint  ->  connect this repo  ->  Apply
+#
+# Then set GEMINI_API_KEY in the service's Environment tab (marked sync:false so
+# it's never committed). Everything else is wired automatically.
+services:
+  - type: web
+    name: alphaforge
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free                 # spins down when idle (cold start ~30-60s)
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true    # Render generates a strong secret
+      - key: TRADING_MODE
+        value: paper           # keep the public demo on paper trading
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_API_KEY
+        sync: false            # set in the dashboard (secret)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: alphaforge-db
+          property: connectionString
+
+databases:
+  - name: alphaforge-db
+    plan: free                 # free Postgres (no TimescaleDB ext — schema degrades gracefully)
+    databaseName: alphaforge
+    user: alphaforge
