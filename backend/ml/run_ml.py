@@ -62,6 +62,15 @@ def main(start="2015-01-01", end="2024-01-01") -> dict:
     print(format_ic(model_name, rep_model))
     print(format_ic("momentum (ret_126)", rep_base))
 
+    # LSTM sequence model — same folds, same IC metric (needs torch)
+    from ml.lstm_model import torch_available, walk_forward_predict_lstm
+
+    if torch_available():
+        lstm_preds = walk_forward_predict_lstm(panel, window=6, min_train=36, test_size=12)
+        print(format_ic("LSTM (seq)", ic_report(lstm_preds)))
+    else:
+        print("LSTM (seq)       skipped — pip install torch to enable")
+
     # interpretability — fit on the whole panel for a global attribution
     _, model = make_model()
     model.fit(panel[FEATURE_COLUMNS], panel["target"])

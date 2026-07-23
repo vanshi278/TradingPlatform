@@ -10,16 +10,16 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-# 18 features — returns, volatility, RSI, volume, trend, mean-reversion, range.
+# 22 features — returns, volatility, RSI, volume, trend, mean-reversion, range.
 FEATURE_COLUMNS = [
-    "ret_1", "ret_5", "ret_10", "ret_21", "ret_63", "ret_126",
-    "vol_21", "vol_63",
+    "ret_1", "ret_5", "ret_10", "ret_21", "ret_63", "ret_126", "ret_252",
+    "vol_21", "vol_63", "vol_126",
     "rsi_14",
     "vol_ratio_21",
-    "close_sma20", "close_sma50", "sma20_sma50",
+    "close_sma20", "close_sma50", "sma20_sma50", "dist_sma200",
     "zscore_20",
     "hi_252", "lo_252",
-    "ret_skew_21", "mom_21_5",
+    "ret_skew_21", "mom_21_5", "hl_range_21",
 ]
 
 
@@ -39,6 +39,7 @@ def compute_features(df: pd.DataFrame) -> pd.DataFrame:
 
     sma20 = close.rolling(20).mean()
     sma50 = close.rolling(50).mean()
+    sma200 = close.rolling(200).mean()
 
     f = pd.DataFrame(index=df.index)
     f["ret_1"] = ret1
@@ -47,16 +48,20 @@ def compute_features(df: pd.DataFrame) -> pd.DataFrame:
     f["ret_21"] = close.pct_change(21)
     f["ret_63"] = close.pct_change(63)
     f["ret_126"] = close.pct_change(126)
+    f["ret_252"] = close.pct_change(252)                 # 12-month momentum
     f["vol_21"] = ret1.rolling(21).std()
     f["vol_63"] = ret1.rolling(63).std()
+    f["vol_126"] = ret1.rolling(126).std()               # 6-month volatility
     f["rsi_14"] = rsi(close, 14)
     f["vol_ratio_21"] = volume / volume.rolling(21).mean()
     f["close_sma20"] = close / sma20 - 1
     f["close_sma50"] = close / sma50 - 1
     f["sma20_sma50"] = sma20 / sma50 - 1
+    f["dist_sma200"] = close / sma200 - 1                 # long-term trend position
     f["zscore_20"] = (close - sma20) / close.rolling(20).std()
     f["hi_252"] = close / close.rolling(252).max() - 1
     f["lo_252"] = close / close.rolling(252).min() - 1
     f["ret_skew_21"] = ret1.rolling(21).skew()
     f["mom_21_5"] = close.pct_change(21) - close.pct_change(5)
+    f["hl_range_21"] = ((df["high"] - df["low"]) / close).rolling(21).mean()  # intraday range
     return f[FEATURE_COLUMNS]

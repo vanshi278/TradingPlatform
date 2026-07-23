@@ -10,7 +10,7 @@
 - **✅ Phase 1 — Data Layer:** historical loader (NSE equities via yfinance), TimescaleDB read/write, Redis pub/sub bus, and 3 concurrent feeds normalized into one tick format. Live broker WebSocket scaffolded (activate with API keys).
 - **✅ Phase 2 — Event-Driven Backtester:** single-queue event loop with **proven lookahead-bias protection**, next-open fills (slippage + commission), portfolio accounting, buy & hold + MA-crossover strategies, and equity-curve metrics (Sharpe, CAGR, max drawdown).
 - **✅ Phase 3 — Alpha / Strategy module:** short-selling + target-weight rebalancing, pairs trading on cointegrated spreads (Engle-Granger), cross-sectional long/short momentum, an inventory-managed market-making sim, and a strategy comparison report.
-- **✅ Phase 4 — ML / Forecasting:** causal feature engineering, a forward-return **rank** target, **walk-forward** cross-validation, LightGBM (sklearn fallback) vs a momentum baseline, an honest **Information Coefficient** report (mean IC ≈ +0.047 out-of-sample), SHAP attribution, and the ML score backtested as a dollar-neutral long/short.
+- **✅ Phase 4 — ML / Forecasting:** causal feature engineering (**22 features**), a forward-return **rank** target, **walk-forward** cross-validation, **LightGBM + an LSTM** (PyTorch) vs a momentum baseline, an honest **Information Coefficient** report (mean IC ≈ +0.02–0.03 out-of-sample, both models beating the baseline), SHAP attribution, and the ML score backtested as a dollar-neutral long/short.
 - **✅ Phase 5 — Execution + LOB simulator:** a limit-order-book with price-time priority and O(1) cancels, a matching engine, Poisson order flow, a Kyle-λ impact model, **Almgren-Chriss** vs TWAP/VWAP with an implementation-shortfall comparison (AC cut timing risk ~28% at +2.4 bps cost), swapped into the backtester as size-dependent impact fills.
 - **✅ Phase 6 — Risk Engine:** 99% 1-day **VaR/CVaR** three ways (historical, parametric, Monte-Carlo), a **Kupiec** exception backtest (model not rejected), pre-trade position/sector/gross **limit checks** (resize or block), and a drawdown **kill switch** that flattens the book.
 - **✅ Phase 7 — React Dashboard:** a live cockpit (React + Vite + Tailwind + lightweight-charts) — real-time candlestick + order-book depth ladder over a FastAPI **WebSocket**, plus a backtest-runner UI, equity curve, positions, and a live risk panel driven by the engine.
@@ -23,7 +23,7 @@
 | Pillar | Headline result |
 |--------|-----------------|
 | **Event-driven backtester** | RELIANCE buy & hold +207% / Sharpe 0.81 (2018–24) — with a *proven* no-lookahead guarantee |
-| **ML signal** | out-of-sample mean **IC +0.047** (beat momentum −0.012), walk-forward + SHAP |
+| **ML signal** | LightGBM + LSTM on 22 features, out-of-sample mean **IC ≈ +0.02–0.03** (beat momentum −0.012), walk-forward + SHAP |
 | **Almgren-Chriss execution** | cut timing risk **~28%** (27.0 → 19.5 bps) vs TWAP at +2.4 bps cost |
 | **Risk engine** | 99% VaR three ways; **Kupiec backtest passes** (15 vs 12.3 expected, p=0.45) |
 | **Tests** | **70 passing** (`pytest`) — incl. the no-lookahead, matching-engine & VaR guarantees |
@@ -231,17 +231,22 @@ cd backend && python -m ml.run_ml
 Cross-sectional forward-return forecasting on a 24-name Nifty universe (2015–2024,
 monthly), evaluated strictly out-of-sample with walk-forward CV:
 
+**22 features**, two models (gradient-boosted trees + an **LSTM**) evaluated on the
+same walk-forward folds and the same IC metric:
+
 | Signal | Mean IC | IC IR | t-stat | Hit rate |
 |--------|--------:|------:|-------:|---------:|
-| ML model (gradient-boosted trees) | **+0.047** | 0.22 | 1.66 | 61% |
+| Gradient-boosted trees (LightGBM/sklearn) | **+0.024** | 0.11 | 0.86 | 49% |
+| LSTM sequence model (PyTorch) | **+0.022** | 0.09 | 0.71 | 51% |
 | Momentum baseline (`ret_126`) | −0.012 | −0.04 | −0.30 | 49% |
 
-The ML score, backtested as a dollar-neutral long/short, returned +19.9% with a
-max drawdown of just −12.5%. A mean IC of ~0.047 is a genuinely useful (and
-honest) equity signal — the rigor is in *how* it's measured: a **rank** target
-(not raw price), strictly causal features (`tests/test_ml_features.py` proves
-no future leakage), walk-forward folds that never train on a test month, and
-SHAP attribution so the model isn't a black box. See
+The ML score, backtested as a dollar-neutral long/short, returned +21.8% with a
+max drawdown of just −10.4%. A mean IC of ~0.02–0.03 on a 23-name universe is
+**modest and noisy** (t-stat < 2 — not statistically significant), and the whole
+point is to report it *honestly*: both models beat the momentum baseline, and
+the rigor is in *how* it's measured — a **rank** target (not raw price), strictly
+causal features (`tests/test_ml_features.py` proves no future leakage),
+walk-forward folds that never train on a test month, and SHAP attribution. See
 [backend/ml/README.md](backend/ml/README.md).
 
 ## Execution: implementation shortfall (Phase 5)

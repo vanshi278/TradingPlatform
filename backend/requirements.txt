@@ -8,7 +8,7 @@ email-validator   # pydantic EmailStr (auth)
 # ---- Auth / trading (Phase 9) ----
 bcrypt            # password hashing
 pyjwt             # JWT tokens
-# smartapi-python pyotp logzero   # optional: Angel One live-broker adapter
+# smartapi-python pyotp logzero websocket-client   # optional: Angel One live broker (TRADING_MODE=live)
 
 # ---- Data / storage ----
 pandas
@@ -28,7 +28,7 @@ matplotlib        # equity-curve / drawdown plots (backtest results)
 # ---- ML / forecasting (Phase 4) ----
 lightgbm          # gradient-boosted trees (falls back to sklearn if libomp missing)
 shap              # model interpretability (falls back to feature_importances_)
-# torch           # optional LSTM/GRU sequence model
+torch             # LSTM sequence model (ml/lstm_model.py)
 # alphalens-reloaded
 
 # ---- Dev / test ----

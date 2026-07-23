@@ -17,9 +17,10 @@ vs. backend vs. full-stack). Repo: github.com/vanshi278/TradingPlatform
   flow, Kyle-λ impact); **cut execution timing risk ~28% vs. TWAP** at +2.4 bps
   cost over 200 Monte-Carlo paths.
 
-- Developed an **ML alpha signal** (gradient-boosted trees) using walk-forward
-  cross-validation and cross-sectional rank targets; achieved **out-of-sample
-  Information Coefficient ≈ 0.05**, beating a momentum baseline, with SHAP
+- Developed **ML alpha signals** — a LightGBM tree model **and an LSTM** (PyTorch)
+  across **22 features** — using walk-forward cross-validation and cross-sectional
+  rank targets; both beat a momentum baseline on out-of-sample **Information
+  Coefficient** (~0.02–0.03, honestly reported on a 23-name universe), with SHAP
   interpretability.
 
 - Engineered a **real-time risk engine**: 99% VaR/CVaR three ways (historical,

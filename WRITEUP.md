@@ -72,8 +72,11 @@ The goal is a *useful, honest* predictive signal, not a high-accuracy headline.
   price is a red flag; what matters for a long/short book is *relative* ordering.
 - **Walk-forward cross-validation.** Train on past months, test on the next unseen block,
   roll forward. A test month is never in training. Time is never shuffled.
-- **Causal features.** All 18 features at time *t* use only data `≤ t`; a test proves that
+- **Causal features.** All 22 features at time *t* use only data `≤ t`; a test proves that
   truncating the future doesn't change a past feature value.
+- **Two models, same folds.** A LightGBM/sklearn tree model and an LSTM sequence model
+  (PyTorch, consuming a window of monthly feature vectors) are evaluated on identical
+  walk-forward folds with the same IC metric — an honest, apples-to-apples comparison.
 - **Evaluate with Information Coefficient** (per-month rank correlation of prediction vs.
   realized return), not accuracy.
 
@@ -81,11 +84,14 @@ Result on a 24-name Nifty universe (2015–2024, monthly, strictly out-of-sample
 
 | Signal | Mean IC | IC IR | t-stat | Hit rate |
 |--------|--------:|------:|-------:|---------:|
-| Gradient-boosted trees | **+0.047** | 0.22 | 1.66 | 61% |
+| Gradient-boosted trees | **+0.024** | 0.11 | 0.86 | 49% |
+| LSTM sequence model | **+0.022** | 0.09 | 0.71 | 51% |
 | Momentum baseline | −0.012 | −0.04 | −0.30 | 49% |
 
-A mean IC near 0.05 is a genuinely useful equity signal — and the model clearly beat the
-momentum baseline. SHAP attribution shows the top drivers (RSI, distance-from-52-week-low,
+Both models beat the momentum baseline, but at ~0.02–0.03 on a 23-name universe the IC is
+**modest and not statistically significant** (t < 2) — the honest read is "a small positive
+edge, correctly measured," not a strong signal. That candor is the point: on a bigger
+universe the signal would firm up. SHAP shows the top drivers (RSI, distance-from-52-week-low,
 short-term reversal, volatility), so it isn't a black box.
 
 > Note: the intended model is LightGBM; it falls back to scikit-learn's
